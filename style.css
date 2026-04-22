@@ -134,6 +134,31 @@ img { max-width: 100%; display: block; }
     transition: var(--transition);
 }
 
+/* ===== Language switcher ===== */
+.lang-switcher {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+}
+
+.lang-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    line-height: 0;
+}
+
+.lang-btn:hover { opacity: 0.75; }
+.lang-btn.active { opacity: 1; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.6); border-radius: 3px; }
+.lang-btn svg, .lang-btn svg * { pointer-events: none; }
+
 /* ===== Buttons ===== */
 .btn {
     display: inline-flex;
@@ -1170,8 +1195,6 @@ img { max-width: 100%; display: block; }
     width: auto;
     height: auto;
     object-fit: contain;
-    filter: grayscale(1) opacity(0.6);
-    transition: var(--transition);
 }
 
 .logo-slide img[src*="veolia"],
@@ -1189,15 +1212,8 @@ img { max-width: 100%; display: block; }
     max-width: 140px;
 }
 
-.logo-slide img:hover,
-.logo-slide svg.logo-inline:hover {
-    filter: grayscale(0) opacity(1);
-}
-
 .logo-slide svg.logo-inline {
     flex-shrink: 0;
-    filter: grayscale(1) opacity(0.6);
-    transition: var(--transition);
 }
 
 /* fallback text si l'image ne charge pas */

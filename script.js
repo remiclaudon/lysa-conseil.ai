@@ -1,3 +1,40 @@
+// ===== i18n =====
+const i18n = {
+  lang: localStorage.getItem('lysa-lang') || 'fr',
+
+  apply(lang) {
+    this.lang = lang;
+    localStorage.setItem('lysa-lang', lang);
+    document.documentElement.lang = lang;
+    const t = TRANSLATIONS[lang];
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = t[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const v = t[el.dataset.i18nHtml];
+      if (v !== undefined) el.innerHTML = v;
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const v = t[el.dataset.i18nPlaceholder];
+      if (v !== undefined) el.placeholder = v;
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+
+    renderCarousel();
+  }
+};
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => i18n.apply(btn.dataset.lang));
+});
+
 // ===== Carrousel références =====
 (function () {
     const track   = document.getElementById('carousel-track');
@@ -17,13 +54,12 @@
 
     function getSectorIcon(sector) {
         const s = sector.toLowerCase();
-        if (s.includes('énergie') || s.includes('energie') || s.includes('utilities')) return 'energy';
-        if (s.includes('assurance')) return 'insurance';
-        if (s.includes('banque')) return 'bank';
+        if (s.includes('énergie') || s.includes('energie') || s.includes('utilities') || s.includes('energy')) return 'energy';
+        if (s.includes('assurance') || s.includes('insurance')) return 'insurance';
+        if (s.includes('banque') || s.includes('banking')) return 'bank';
         if (s.includes('télécom') || s.includes('telecom')) return 'telecom';
         if (s.includes('asset')) return 'asset';
-        if (s.includes('auto')) return 'auto';
-        if (s.includes('formation')) return 'training';
+        if (s.includes('auto') || s.includes('automotive')) return 'auto';
         return 'asset';
     }
 
@@ -31,36 +67,53 @@
     let timer;
     const DELAY = 5000;
 
-    // Render cards from data file
-    LYSA_REFERENCES.forEach((ref) => {
-        const iconKey = getSectorIcon(ref.sector);
-        const iconSvg = SECTOR_ICONS[iconKey] || '';
-        const card = document.createElement('div');
-        card.className = 'mission-card';
-        card.innerHTML = `
-            <div class="mission-sector-header">
-                <svg viewBox="0 -960 960 960" width="30" height="30" aria-hidden="true" class="sector-icon" fill="currentColor">${iconSvg}</svg>
-                <span class="mission-sector">${ref.sector}</span>
-            </div>
-            <h4>${ref.title}</h4>
-            <p>${ref.desc}</p>
-            <div class="mission-results">
-                ${ref.results.map(r => `<span>${r}</span>`).join('')}
-            </div>
-            ${ref.tags ? `<div class="mission-tags">${ref.tags.map(t => `<span class="mission-tag">${t}</span>`).join('')}</div>` : ''}
-        `;
-        track.appendChild(card);
-    });
+    window.renderCarousel = function() {
+        // Clear existing content
+        track.innerHTML = '';
+        dotsEl.innerHTML = '';
 
-    // Dots
-    LYSA_REFERENCES.forEach((_, i) => {
-        const dot = document.createElement('button');
-        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-        dot.setAttribute('role', 'tab');
-        dot.setAttribute('aria-label', `Référence ${i + 1}`);
-        dot.addEventListener('click', () => goTo(i));
-        dotsEl.appendChild(dot);
-    });
+        const lang = i18n.lang;
+
+        // Render cards using current language
+        LYSA_REFERENCES.forEach((ref) => {
+            const sector  = (lang === 'en' && ref.sector_en)  ? ref.sector_en  : ref.sector;
+            const title   = (lang === 'en' && ref.title_en)   ? ref.title_en   : ref.title;
+            const desc    = (lang === 'en' && ref.desc_en)    ? ref.desc_en    : ref.desc;
+            const results = (lang === 'en' && ref.results_en) ? ref.results_en : ref.results;
+            const tags    = (lang === 'en' && ref.tags_en)    ? ref.tags_en    : ref.tags;
+
+            const iconKey = getSectorIcon(sector);
+            const iconSvg = SECTOR_ICONS[iconKey] || '';
+            const card = document.createElement('div');
+            card.className = 'mission-card';
+            card.innerHTML = `
+                <div class="mission-sector-header">
+                    <svg viewBox="0 -960 960 960" width="30" height="30" aria-hidden="true" class="sector-icon" data-sector="${iconKey}" fill="currentColor">${iconSvg}</svg>
+                    <span class="mission-sector">${sector}</span>
+                </div>
+                <h4>${title}</h4>
+                <p>${desc}</p>
+                <div class="mission-results">
+                    ${results.map(r => `<span>${r}</span>`).join('')}
+                </div>
+                ${tags ? `<div class="mission-tags">${tags.map(t => `<span class="mission-tag">${t}</span>`).join('')}</div>` : ''}
+            `;
+            track.appendChild(card);
+        });
+
+        // Rebuild dots
+        LYSA_REFERENCES.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('role', 'tab');
+            dot.setAttribute('aria-label', `${lang === 'en' ? 'Reference' : 'Référence'} ${i + 1}`);
+            dot.addEventListener('click', () => goTo(i));
+            dotsEl.appendChild(dot);
+        });
+
+        // Reset position
+        goTo(0);
+    };
 
     function goTo(index) {
         current = (index + LYSA_REFERENCES.length) % LYSA_REFERENCES.length;
@@ -189,20 +242,52 @@ document.querySelectorAll('.expertise-grid, .offres-grid, .references-sectors').
 // Form handling
 const form = document.getElementById('contact-form');
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const btn = form.querySelector('button[type="submit"]');
     const originalText = btn.textContent;
-
-    btn.textContent = 'Message envoyé !';
-    btn.style.background = '#22c55e';
+    btn.textContent = TRANSLATIONS[i18n.lang]['form.sending'];
     btn.disabled = true;
 
-    setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.background = '';
-        btn.disabled = false;
-        form.reset();
-    }, 3000);
+    const data = {
+        name:    form.name.value,
+        company: form.company.value,
+        email:   form.email.value,
+        subject: form.subject.value,
+        message: form.message.value,
+    };
+
+    try {
+        const res = await fetch('contact.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            btn.textContent = TRANSLATIONS[i18n.lang]['form.sent'];
+            btn.style.background = '#22c55e';
+            form.reset();
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            throw new Error(json.error || 'Erreur');
+        }
+    } catch {
+        btn.textContent = TRANSLATIONS[i18n.lang]['form.error'];
+        btn.style.background = '#ef4444';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.disabled = false;
+        }, 3000);
+    }
 });
+
+// Apply saved language on load
+i18n.apply(i18n.lang);
