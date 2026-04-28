@@ -251,15 +251,16 @@ form.addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     const data = {
+        access_key: '7dbc729f-6300-46da-a4ea-ec9804e986a1',
         name:    form.name.value,
         company: form.company.value,
         email:   form.email.value,
-        subject: form.subject.value,
+        subject: `Contact Lysa Conseil${form.subject.value ? ' — ' + form.subject.value : ''}`,
         message: form.message.value,
     };
 
     try {
-        const res = await fetch('contact.php', {
+        const res = await fetch('https://api.web3forms.com/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),

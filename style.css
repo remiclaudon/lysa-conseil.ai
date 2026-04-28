@@ -972,6 +972,7 @@ img { max-width: 100%; display: block; }
 
 .contact-info .section-tag {
     text-align: left;
+    color: var(--color-accent);
 }
 
 .contact-info .section-title {
